@@ -1,0 +1,102 @@
+import { BadRequestException, DefaultValuePipe, Controller, Get, Param, Query, Post, Body, Put, Patch, Delete, ParseIntPipe } from '@nestjs/common';
+import { CreateProdutoDto } from './dto/create-produto.dto';
+import { UpdateProdutoDto } from './dto/update-produto.dto';
+import { ProdutosService } from './produtos.service';
+
+@Controller('produtos')
+export class ProdutosController {
+    constructor(private readonly produtosService: ProdutosService) { }
+
+    @Get()
+    listar(@Query('categoria') categoria?: string,
+            @Query('limite', new DefaultValuePipe(10), ParseIntPipe) limite?: number) {
+
+        if (!categoria) {
+            return this.produtosService.listarTodos();
+        }
+
+        return this.produtosService.listarPorCategoria(categoria);
+    }
+
+    @Get(':id')
+    buscarPorId(@Param('id') id: string) {
+        
+        const idNumero = Number(id);
+
+        if (Number.isNaN(idNumero)) {
+            throw new BadRequestException('O ID deve ser um número');
+        }
+
+        const produto = this.produtosService.buscarPorId(idNumero);
+
+        if (!produto) {
+            throw new BadRequestException('Produto não encontrado');
+        }
+
+        return produto;
+    }
+
+    @Post()
+    criar(
+        @Body()
+        body: {
+            nome: string;
+            categoria: string;
+            preco: number;
+            ativo: boolean;
+        }    
+    ){
+        return this.produtosService.criar(body);
+    }
+
+    @Put(':id')
+    atualizarCompleto(
+        @Param('id') id: string,
+        @Body()
+        body: {
+          nome: string;
+          categoria: string;
+          preco: number;
+          ativo: boolean;
+        }
+    ){
+        const idNumero = Number(id);
+
+        if (Number.isNaN(idNumero)) {
+            throw new BadRequestException('O ID deve ser um número');
+        }
+
+        return this.produtosService.atualizarCompleto(idNumero, body);
+    }
+
+    @Patch(':id')
+    atualizarParcial(
+        @Param('id') id: string,
+        @Body()
+        body: {
+            nome?: string;
+            categoria?: string;
+            preco?: number;
+            ativo?: boolean;  
+        }
+    ){
+        const idNumero = Number(id);
+
+        if (Number.isNaN(idNumero)) {
+            throw new BadRequestException('O ID deve ser um número');
+        }
+
+        return this.produtosService.atualizarParcial(idNumero, body);
+    }
+
+    @Delete(':id')
+    remover(@Param('id') id: string){
+        const idNumero = Number(id);
+
+        if (Number.isNaN(idNumero)) {
+            throw new BadRequestException('O ID deve ser um número');
+        }
+
+        return this.produtosService.remover(idNumero);        
+    }
+}
