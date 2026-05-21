@@ -1,7 +1,12 @@
-import { IsBoolean, Min, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  Min,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+} from 'class-validator';
 
 export class CreateProdutoDto {
-  
   @IsString()
   @IsNotEmpty()
   nome!: string;
@@ -9,7 +14,7 @@ export class CreateProdutoDto {
   @IsString()
   @IsNotEmpty()
   categoria!: string;
-  
+
   @IsNumber()
   @Min(0)
   preco!: number;

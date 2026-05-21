@@ -1,97 +1,111 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { CreateTarefaDto } from './dto/create-tarefa.dto';
+import { UpdateTarefaDto } from './dto/update-tarefa.dto';
 
 type Tarefa = {
-    id: number;
-    titulo: string;
-    descricao: string;
-    status: 'aberta' | 'em_andamento' | 'concluida';
-    prioridade: 'baixa' | 'media' | 'alta';
-}
+  id: number;
+  titulo: string;
+  descricao: string;
+  status: 'aberta' | 'em_andamento' | 'concluida';
+  prioridade: 1 | 2 | 3 | 4 | 5;
+};
 
 @Injectable()
 export class TarefasService {
-    private tarefas: Tarefa[] = [
-        {
-            id: 1,
-            titulo: 'Configurar projeto',
-            descricao: 'Instalar dependencias e validar o NestJS',
-            status: 'concluida',
-            prioridade: 'alta',
-        },
-        {
-            id: 2,
-            titulo: 'Criar modulo tarefas',
-            descricao: 'Gerar module, controller e service',
-            status: 'em_andamento',
-            prioridade: 'alta',
-        },
-        {
-            id: 3,
-            titulo: 'Implementar listagem',
-            descricao: 'Criar rota GET /tarefas',
-            status: 'aberta',
-            prioridade: 'media',
-        },
-        {
-            id: 4,
-            titulo: 'Testar no Thunder Client',
-            descricao: 'Salvar requests da pratica',
-            status: 'aberta',
-            prioridade: 'baixa',
-        },
-    ];
+  private tarefas: Tarefa[] = [
+    {
+      id: 1,
+      titulo: 'Configurar projeto',
+      descricao: 'Instalar dependencias e validar o NestJS',
+      status: 'concluida',
+      prioridade: 5,
+    },
+    {
+      id: 2,
+      titulo: 'Criar modulo tarefas',
+      descricao: 'Gerar module, controller e service',
+      status: 'em_andamento',
+      prioridade: 5,
+    },
+    {
+      id: 3,
+      titulo: 'Implementar listagem',
+      descricao: 'Criar rota GET /tarefas',
+      status: 'aberta',
+      prioridade: 3,
+    },
+    {
+      id: 4,
+      titulo: 'Testar no Thunder Client',
+      descricao: 'Salvar requests da pratica',
+      status: 'aberta',
+      prioridade: 1,
+    },
+  ];
 
-    listar(status?: string, prioridade?: string){
-        let resultado = [...this.tarefas];
+  listar(prioridade?: 1 | 2 | 3 | 4 | 5, limite?: number) {
+    let resultado = [...this.tarefas];
 
-        if(status){
-            resultado = resultado.filter(t => t.status === status);
-        }
-
-        if(prioridade){
-            resultado = resultado.filter(t => t.prioridade === prioridade);
-        }
-
-        return resultado;
+    if (prioridade) {
+      resultado = resultado.filter((p) => p.prioridade === prioridade);
     }
 
-    buscarPorId(id: number){
-        const tarefa = this.tarefas.find(t => t.id === id);
-
-        if(!tarefa){
-            throw new BadRequestException('Tarefa não encontrada');
-        }
-
-        return tarefa;
+    if (limite && limite > 0) {
+      resultado = resultado.slice(0, limite);
     }
 
-    criar(dados: Omit<Tarefa, 'id'>){
-        const novoId = this.tarefas.length > 0 
-                ? Math.max(...this.tarefas.map(t => t.id)) + 1 : 1;
+    return resultado;
+  }
 
-        const novaTarefa : Tarefa = {id: novoId, ...dados};    
-        this.tarefas.push(novaTarefa);
-        
-        return novaTarefa;
+  buscarPorId(id: number) {
+    const tarefa = this.tarefas.find((p) => p.id === id);
+
+    if (!tarefa) {
+      throw new NotFoundException('Tarefa não encontrada');
     }
 
-    atualizarParcial(id: number, dados: Partial<Omit<Tarefa, 'id'>>){
-        const tarefa = this.buscarPorId(id);
+    return tarefa;
+  }
 
-        const tarefaAtualizada = {...tarefa, ...dados};
+  criar(dados: CreateTarefaDto) {
+    const novoId =
+      this.tarefas.length > 0
+        ? Math.max(...this.tarefas.map((p) => p.id)) + 1
+        : 1;
 
-        this.tarefas = this.tarefas.map(t => t.id === id ? tarefaAtualizada : t);
+    const novaTarefa: Tarefa = { id: novoId, ...dados };
+    this.tarefas.push(novaTarefa);
+    return novaTarefa;
+  }
 
-        return tarefaAtualizada;
+  atualizarCompleto(id: number, dados: CreateTarefaDto) {
+    const indice = this.tarefas.findIndex((p) => p.id === id);
+
+    if (indice === -1) {
+      throw new NotFoundException('Tarefa não encontrada');
     }
 
-    remover(id: number){
-        const tarefa = this.buscarPorId(id);
+    const atualizado: Tarefa = { id, ...dados };
+    this.tarefas[indice] = atualizado;
+    return atualizado;
+  }
 
-        this.tarefas = this.tarefas.filter(t => t.id !== id);
+  atualizarParcial(id: number, dados: UpdateTarefaDto) {
+    const tarefa = this.buscarPorId(id);
+    const atualizado = { ...tarefa, ...dados };
 
-        return {
-            mensagem: `Tarefa de id ${tarefa.id} removida com sucesso`,
-        };
+    this.tarefas = this.tarefas.map((p) => (p.id === id ? atualizado : p));
+    return atualizado;
+  }
+
+  remover(id: number) {
+    const existe = this.tarefas.some((p) => p.id === id);
+
+    if (!existe) {
+      throw new NotFoundException('Tarefa não encontrada');
     }
+
+    this.tarefas = this.tarefas.filter((p) => p.id !== id);
+    return { mensagem: `Tarefa ${id} removida com sucesso` };
+  }
 }
